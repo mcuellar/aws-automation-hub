@@ -23,13 +23,17 @@ resource "random_id" "bucket_id" {
 
 resource "aws_s3_bucket" "this" {
   bucket = local.bucket_name
-  acl    = var.acl
 
   force_destroy = var.force_destroy
 
   tags = merge({
     Name = local.bucket_name
   }, var.tags)
+}
+
+resource "aws_s3_bucket_acl" "this" {
+  bucket = aws_s3_bucket.this.id
+  acl    = var.acl
 }
 
 resource "aws_s3_bucket_versioning" "this" {
@@ -51,14 +55,16 @@ resource "aws_s3_bucket_public_access_block" "this" {
 
 # Server side encryption configuration
 resource "aws_s3_bucket_server_side_encryption_configuration" "this" {
+  count  = var.kms_key_id != null || var.server_side_encryption != null ? 1 : 0
+
   bucket = aws_s3_bucket.this.id
 
   dynamic "rule" {
-    for_each = var.kms_key_id != null || var.server_side_encryption != null ? [1] : []
+    for_each = [1]
 
     content {
       apply_server_side_encryption_by_default {
-        sse_algorithm = var.kms_key_id != null ? "aws:kms" : (var.server_side_encryption == "AES256" ? "AES256" : var.server_side_encryption)
+        sse_algorithm     = var.kms_key_id != null ? "aws:kms" : (var.server_side_encryption == "AES256" ? "AES256" : var.server_side_encryption)
         kms_master_key_id = var.kms_key_id
       }
     }
