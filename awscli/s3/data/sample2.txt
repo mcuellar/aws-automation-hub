@@ -1,0 +1,8 @@
+Sample File 2
+
+Another test file for uploading with s3_upload.sh.
+Timestamp: 2025-10-23
+
+Alpha
+Bravo
+Charlie

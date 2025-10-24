@@ -66,3 +66,43 @@ Safety notes:
 
 Contributions:
 - Feel free to add a `--dry-run` mode, region flag, or support for different pagination strategies for very large buckets.
+
+## s3_upload.sh
+
+Upload files from the local `data/` directory to an S3 bucket. The script supports uploading a single file (path relative to `data/`) or all files recursively.
+
+Important: uploading will transfer data to the target S3 bucket. Verify the target and profile before proceeding.
+
+Dependencies:
+- AWS CLI (v2 recommended)
+
+Usage:
+
+```bash
+# Upload all files under data/ using the default profile (interactive confirmation)
+./s3_upload.sh -a my-bucket-name
+
+# Upload a single file 'sample1.txt' from data/ using profile 'myprofile' and skip confirmation
+./s3_upload.sh -y -r myprofile -f sample1.txt my-bucket-name
+```
+
+Options:
+- `-a` : Upload all files from `data/` recursively
+- `-f FILE` : Upload a single file (FILE is path relative to `data/`)
+- `-r PROFILE` : AWS CLI profile to use (defaults to `default` if omitted)
+- `-y` : Skip interactive confirmation
+- `-h` : Show help/usage
+
+Behavior:
+- Verifies the AWS CLI is installed.
+- Checks that the target bucket exists and you have access.
+- For `-a`, uses `aws s3 cp --recursive` to copy the `data/` directory contents to the bucket root.
+- For `-f`, uploads the single file path provided (source: `data/<FILE>`) to the bucket root.
+
+Notes & tips:
+- The script expects a `data/` directory located next to the script (e.g., `awscli/s3/data/`). Sample files are provided for testing.
+- The script always passes `--profile <PROFILE>` to AWS CLI; when `-r` is not supplied it defaults to `default`.
+- Consider adding a `--dry-run` mode if you want to preview files before uploading.
+
+Contributions:
+- Add `--dry-run`, progress output for large uploads, or support for specifying a destination prefix in the bucket.

@@ -1,0 +1,8 @@
+Sample File 1
+
+This is a small sample file used to test s3_upload.sh.
+Timestamp: 2025-10-23
+
+Line 1
+Line 2
+Line 3
