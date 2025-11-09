@@ -50,8 +50,8 @@ resource "aws_wafv2_web_acl" "this" {
 }
 
 resource "aws_wafv2_web_acl_association" "api" {
-  count = var.enable_waf ? 1 : 0
+  count = var.enable_waf && var.create_api_gateway ? 1 : 0
 
-  resource_arn = "arn:aws:apigateway:${data.aws_region.current.name}::/restapis/${aws_api_gateway_rest_api.this.id}/stages/${aws_api_gateway_stage.this.stage_name}"
+  resource_arn = "arn:aws:apigateway:${data.aws_region.current.name}::/restapis/${aws_api_gateway_rest_api.this[0].id}/stages/${aws_api_gateway_stage.this[0].stage_name}"
   web_acl_arn  = aws_wafv2_web_acl.this[0].arn
 }

@@ -37,6 +37,42 @@ resource "aws_secretsmanager_secret_version" "example" {
   secret_string = random_password.example.result
 }
 
+# A minimal target Lambda to demonstrate the deployer updating a function.
+data "archive_file" "target" {
+  type        = "zip"
+  source_file = "${path.module}/target_handler.py"
+  output_path = "${path.module}/target_handler_package.zip"
+}
+
+data "aws_iam_policy_document" "target_assume_role" {
+  statement {
+    effect = "Allow"
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
+    }
+    actions = ["sts:AssumeRole"]
+  }
+}
+
+resource "aws_iam_role" "target_lambda_role" {
+  name               = "example-complete-target-role"
+  assume_role_policy = data.aws_iam_policy_document.target_assume_role.json
+}
+
+resource "aws_iam_role_policy_attachment" "target_basic" {
+  role       = aws_iam_role.target_lambda_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+resource "aws_lambda_function" "target" {
+  function_name = "example-complete-target"
+  filename      = data.archive_file.target.output_path
+  handler       = "target_handler.lambda_handler"
+  runtime       = "python3.10"
+  role          = aws_iam_role.target_lambda_role.arn
+}
+
 module "serverless_api" {
   source = "../.."
 
@@ -64,6 +100,9 @@ module "serverless_api" {
 
   enable_waf          = true
   waf_override_action = "COUNT"
+
+  # Point the deployer at the example target Lambda created above.
+  target_lambda_arn = aws_lambda_function.target.arn
 
   tags = {
     Application = "serverless-api"

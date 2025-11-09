@@ -3,14 +3,16 @@ data "aws_region" "current" {}
 data "aws_caller_identity" "current" {}
 
 resource "aws_cloudwatch_log_group" "api" {
+  count             = var.create_api_gateway ? 1 : 0
   name              = local.api_log_group_name
   retention_in_days = var.log_retention_in_days
   tags              = local.tags
 }
 
 resource "aws_api_gateway_rest_api" "this" {
+  count       = var.create_api_gateway ? 1 : 0
   name        = "${local.name_prefix}-api"
-  description = "Serverless API backed by Lambda."
+  description = "Serverless API (optional)"
   endpoint_configuration {
     types = ["REGIONAL"]
   }
@@ -18,30 +20,34 @@ resource "aws_api_gateway_rest_api" "this" {
 }
 
 resource "aws_api_gateway_resource" "proxy" {
-  rest_api_id = aws_api_gateway_rest_api.this.id
-  parent_id   = aws_api_gateway_rest_api.this.root_resource_id
+  count       = var.create_api_gateway ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.this[0].id
+  parent_id   = aws_api_gateway_rest_api.this[0].root_resource_id
   path_part   = "{proxy+}"
 }
 
 resource "aws_api_gateway_method" "root_any" {
-  rest_api_id   = aws_api_gateway_rest_api.this.id
-  resource_id   = aws_api_gateway_rest_api.this.root_resource_id
+  count         = var.create_api_gateway ? 1 : 0
+  rest_api_id   = aws_api_gateway_rest_api.this[0].id
+  resource_id   = aws_api_gateway_rest_api.this[0].root_resource_id
   http_method   = "ANY"
   authorization = "NONE"
 }
 
 resource "aws_api_gateway_integration" "root_any" {
-  rest_api_id             = aws_api_gateway_rest_api.this.id
-  resource_id             = aws_api_gateway_rest_api.this.root_resource_id
-  http_method             = aws_api_gateway_method.root_any.http_method
+  count                   = var.create_api_gateway ? 1 : 0
+  rest_api_id             = aws_api_gateway_rest_api.this[0].id
+  resource_id             = aws_api_gateway_rest_api.this[0].root_resource_id
+  http_method             = aws_api_gateway_method.root_any[0].http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.hello.invoke_arn
+  uri                     = var.api_lambda_arn
 }
 
 resource "aws_api_gateway_method" "proxy_any" {
-  rest_api_id   = aws_api_gateway_rest_api.this.id
-  resource_id   = aws_api_gateway_resource.proxy.id
+  count         = var.create_api_gateway ? 1 : 0
+  rest_api_id   = aws_api_gateway_rest_api.this[0].id
+  resource_id   = aws_api_gateway_resource.proxy[0].id
   http_method   = "ANY"
   authorization = "NONE"
 
@@ -51,12 +57,13 @@ resource "aws_api_gateway_method" "proxy_any" {
 }
 
 resource "aws_api_gateway_integration" "proxy_any" {
-  rest_api_id             = aws_api_gateway_rest_api.this.id
-  resource_id             = aws_api_gateway_resource.proxy.id
-  http_method             = aws_api_gateway_method.proxy_any.http_method
+  count                   = var.create_api_gateway ? 1 : 0
+  rest_api_id             = aws_api_gateway_rest_api.this[0].id
+  resource_id             = aws_api_gateway_resource.proxy[0].id
+  http_method             = aws_api_gateway_method.proxy_any[0].http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.hello.invoke_arn
+  uri                     = var.api_lambda_arn
 
   request_parameters = {
     "integration.request.path.proxy" = "method.request.path.proxy"
@@ -64,23 +71,25 @@ resource "aws_api_gateway_integration" "proxy_any" {
 }
 
 resource "aws_lambda_permission" "api_gateway" {
+  count         = var.create_api_gateway ? 1 : 0
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.hello.function_name
+  function_name = var.api_lambda_arn
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_api_gateway_rest_api.this.execution_arn}/*/*"
+  source_arn    = "${aws_api_gateway_rest_api.this[0].execution_arn}/*/*"
 }
 
 resource "aws_api_gateway_deployment" "this" {
-  rest_api_id = aws_api_gateway_rest_api.this.id
+  count       = var.create_api_gateway ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.this[0].id
 
   triggers = {
     redeployment = sha1(jsonencode({
       integrations = [
-        aws_api_gateway_integration.root_any.id,
-        aws_api_gateway_integration.proxy_any.id
+        aws_api_gateway_integration.root_any[0].id,
+        aws_api_gateway_integration.proxy_any[0].id
       ],
-      lambda_hash = aws_lambda_function.hello.source_code_hash
+      api_lambda = var.api_lambda_arn
     }))
   }
 
@@ -91,13 +100,14 @@ resource "aws_api_gateway_deployment" "this" {
 }
 
 resource "aws_api_gateway_stage" "this" {
-  rest_api_id   = aws_api_gateway_rest_api.this.id
+  count         = var.create_api_gateway ? 1 : 0
+  rest_api_id   = aws_api_gateway_rest_api.this[0].id
   stage_name    = var.stage_name
-  deployment_id = aws_api_gateway_deployment.this.id
+  deployment_id = aws_api_gateway_deployment.this[0].id
   tags          = local.tags
 
   access_log_settings {
-    destination_arn = aws_cloudwatch_log_group.api.arn
+    destination_arn = aws_cloudwatch_log_group.api[0].arn
     format = jsonencode({
       requestId        = "$context.requestId"
       requestTime      = "$context.requestTime"

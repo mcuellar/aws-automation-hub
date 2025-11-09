@@ -69,6 +69,21 @@ variable "secret_arns" {
   default     = []
 }
 
+variable "target_lambda_arn" {
+  type        = string
+  description = "Full ARN of the Lambda function that the deployer should update when new artifacts arrive in the S3 bucket. This must be provided by the caller."
+  validation {
+    condition     = can(regex("^arn:aws:lambda:[a-z0-9-]+:[0-9]{12}:function:[^\\s]+$", var.target_lambda_arn))
+    error_message = "target_lambda_arn must be a valid Lambda function ARN (arn:aws:lambda:<region>:<account-id>:function:<name>)."
+  }
+}
+
+variable "deploy_bucket_name" {
+  type        = string
+  description = "Optional explicit S3 bucket name to host lambda artifacts. If empty, the module creates a bucket with a generated name prefix."
+  default     = ""
+}
+
 variable "log_retention_in_days" {
   type        = number
   description = "Number of days to retain CloudWatch Logs for the API and Lambda."
@@ -95,4 +110,16 @@ variable "tags" {
   type        = map(string)
   description = "Additional tags to apply to all resources created by this blueprint."
   default     = {}
+}
+
+variable "create_api_gateway" {
+  type        = bool
+  description = "Whether to create an API Gateway pointing at a configured Lambda. Disabled by default."
+  default     = false
+}
+
+variable "api_lambda_arn" {
+  type        = string
+  description = "ARN of the Lambda function the optional API Gateway should invoke. Required if create_api_gateway = true."
+  default     = ""
 }

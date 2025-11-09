@@ -54,15 +54,48 @@ Refer to the [examples](examples/README.md) directory for both minimal and fully
 | `enable_waf` | Whether to provision an AWS WAFv2 Web ACL and associate it with the API Gateway stage. | `bool` | `false` | no |
 | `waf_override_action` | Override action to apply to AWS managed rule group requests. Valid values: NONE, COUNT. | `string` | `"NONE"` | no |
 | `tags` | Additional tags to apply to all resources created by this blueprint. | `map(string)` | `{}` | no |
+| `create_api_gateway` | Whether to create an API Gateway that routes to a configured Lambda. | `bool` | `false` | no |
+| `api_lambda_arn` | ARN of the Lambda the optional API Gateway should invoke (required if `create_api_gateway` = true). | `string` | `""` | no |
 
 ## Outputs
 
 | Name | Description |
 |------|-------------|
-| `api_invoke_url` | Invoke URL for the API Gateway stage. |
-| `lambda_function_arn` | ARN of the hello world Lambda function. |
-| `lambda_execution_role_arn` | ARN of the IAM role assumed by the Lambda function. |
+| `api_invoke_url` | Invoke URL for the optional API Gateway stage (null if not created). |
 | `waf_web_acl_arn` | ARN of the provisioned AWS WAFv2 Web ACL, if enabled. |
+
+## Deployer / artifact workflow
+
+This module creates an S3 bucket for Lambda artifacts (with versioning suspended and a lifecycle rule to expire objects older than 3 days). It also creates a `deployer` Lambda that listens for S3 Object Created events via EventBridge and calls `UpdateFunctionCode` on the `target_lambda_arn` you provide.
+
+How to use the deployer
+
+1. Ensure you pass a valid `target_lambda_arn` when calling the module (examples show how the example target lambda is created and its ARN passed in). Example:
+
+```hcl
+module "serverless_api" {
+  source = "../"
+
+  project_name        = "my-service"
+  environment         = "dev"
+  target_lambda_arn   = aws_lambda_function.my_target.arn
+  # ...other inputs
+}
+```
+
+2. Upload a zip artifact to the created artifacts bucket (see `artifact_bucket_name` output):
+
+```bash
+aws s3 cp my_function_build.zip s3://$(terraform output -raw artifact_bucket_name)/builds/my_function_build.zip
+```
+
+3. The deployer Lambda will be invoked via EventBridge. It reads the S3 object key and calls `UpdateFunctionCode` with `Publish=True` to deploy the uploaded package to the target Lambda.
+
+Notes & security
+
+- The module requires `target_lambda_arn` to be a full ARN. This allows the deployer IAM policy to be locked to the exact function and follow least-privilege principles.
+- If your target Lambda resides in a different AWS account, prefer an assume-role pattern where the deployer assumes a role in the target account with `lambda:UpdateFunctionCode` permission. I can add that pattern if you need cross-account support.
+- If you use KMS encryption for the S3 bucket, ensure the deployer has `kms:Decrypt` for the CMK.
 
 ## Testing
 

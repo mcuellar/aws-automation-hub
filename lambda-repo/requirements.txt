@@ -1,0 +1,5 @@
+# Add runtime dependencies here, e.g.:
+# boto3
+
+# test deps
+pytest
