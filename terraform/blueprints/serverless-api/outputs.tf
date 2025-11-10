@@ -13,5 +13,5 @@ output "artifact_bucket_name" {
 
 output "api_invoke_url" {
   description = "Invoke URL for the optional API Gateway stage."
-  value       = var.create_api_gateway ? "https://${aws_api_gateway_rest_api.this[0].id}.execute-api.${data.aws_region.current.name}.amazonaws.com/${aws_api_gateway_stage.this[0].stage_name}" : null
+  value       = var.create_api_gateway ? "https://${aws_api_gateway_rest_api.this[0].id}.execute-api.${data.aws_region.current.id}.amazonaws.com/${aws_api_gateway_stage.this[0].stage_name}" : null
 }

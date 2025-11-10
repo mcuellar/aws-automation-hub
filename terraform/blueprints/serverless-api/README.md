@@ -56,6 +56,8 @@ Refer to the [examples](examples/README.md) directory for both minimal and fully
 | `tags` | Additional tags to apply to all resources created by this blueprint. | `map(string)` | `{}` | no |
 | `create_api_gateway` | Whether to create an API Gateway that routes to a configured Lambda. | `bool` | `false` | no |
 | `api_lambda_arn` | ARN of the Lambda the optional API Gateway should invoke (required if `create_api_gateway` = true). | `string` | `""` | no |
+| `target_lambda_arn` | Optional: Full ARN of the Lambda function that the deployer should update when new artifacts arrive in the S3 bucket. If provided, the module will scope the deployer IAM policy to this exact function. | `string` | `""` | no |
+| `target_lambda_name` | Optional: Name of an existing Lambda function in the same account/region. If provided, the module will look up its ARN and use it as the target. Either `target_lambda_arn` or `target_lambda_name` must be provided when using the deployer. | `string` | `""` | no |
 
 ## Outputs
 
@@ -70,7 +72,7 @@ This module creates an S3 bucket for Lambda artifacts (with versioning suspended
 
 How to use the deployer
 
-1. Ensure you pass a valid `target_lambda_arn` when calling the module (examples show how the example target lambda is created and its ARN passed in). Example:
+1. Ensure you pass a valid `target_lambda_arn` or `target_lambda_name` when calling the module. The module accepts either a full ARN (recommended when available) or a function name. Examples:
 
 ```hcl
 module "serverless_api" {
@@ -78,7 +80,11 @@ module "serverless_api" {
 
   project_name        = "my-service"
   environment         = "dev"
+  # Option A: pass the full ARN (recommended)
   target_lambda_arn   = aws_lambda_function.my_target.arn
+
+  # Option B: or pass the function name and let the module look up the ARN
+  # target_lambda_name  = aws_lambda_function.my_target.function_name
   # ...other inputs
 }
 ```
@@ -93,7 +99,7 @@ aws s3 cp my_function_build.zip s3://$(terraform output -raw artifact_bucket_nam
 
 Notes & security
 
-- The module requires `target_lambda_arn` to be a full ARN. This allows the deployer IAM policy to be locked to the exact function and follow least-privilege principles.
+- The module accepts either `target_lambda_arn` (full ARN) or `target_lambda_name` (function name). If you provide a name, the module will perform an internal lookup of the function's ARN and scope permissions to it. Providing a full ARN is still recommended when available to avoid reliance on lookups.
 - If your target Lambda resides in a different AWS account, prefer an assume-role pattern where the deployer assumes a role in the target account with `lambda:UpdateFunctionCode` permission. I can add that pattern if you need cross-account support.
 - If you use KMS encryption for the S3 bucket, ensure the deployer has `kms:Decrypt` for the CMK.
 

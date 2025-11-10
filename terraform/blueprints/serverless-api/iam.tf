@@ -11,6 +11,13 @@ data "aws_iam_policy_document" "lambda_assume_role" {
   }
 }
 
+# If the caller provided a target Lambda name, look it up here so the module can
+# resolve its ARN and scope the deployer IAM policy to that exact function.
+data "aws_lambda_function" "target" {
+  count         = var.target_lambda_name != "" ? 1 : 0
+  function_name = var.target_lambda_name
+}
+
 resource "aws_iam_role" "lambda" {
   name               = "${local.name_prefix}-lambda-role"
   assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
@@ -108,7 +115,7 @@ resource "aws_iam_role_policy" "deployer_inline" {
           "lambda:GetFunction",
           "lambda:PublishVersion"
         ],
-        Resource = [var.target_lambda_arn]
+        Resource = [local.target_lambda_arn]
       },
       {
         Effect = "Allow",

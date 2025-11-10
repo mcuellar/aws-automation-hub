@@ -129,8 +129,8 @@ resource "aws_api_gateway_stage" "this" {
 }
 
 resource "aws_api_gateway_method_settings" "all" {
-  rest_api_id = aws_api_gateway_rest_api.this.id
-  stage_name  = aws_api_gateway_stage.this.stage_name
+  rest_api_id = aws_api_gateway_rest_api.this[0].id
+  stage_name  = aws_api_gateway_stage.this[0].stage_name
   method_path = "*/*"
 
   settings {

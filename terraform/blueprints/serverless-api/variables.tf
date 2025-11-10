@@ -71,11 +71,19 @@ variable "secret_arns" {
 
 variable "target_lambda_arn" {
   type        = string
-  description = "Full ARN of the Lambda function that the deployer should update when new artifacts arrive in the S3 bucket. This must be provided by the caller."
+  description = "Optional: Full ARN of the Lambda function that the deployer should update when new artifacts arrive in the S3 bucket. If empty, provide `target_lambda_name` instead."
+  default     = ""
   validation {
-    condition     = can(regex("^arn:aws:lambda:[a-z0-9-]+:[0-9]{12}:function:[^\\s]+$", var.target_lambda_arn))
-    error_message = "target_lambda_arn must be a valid Lambda function ARN (arn:aws:lambda:<region>:<account-id>:function:<name>)."
+    # allow empty string or a valid Lambda ARN
+    condition     = var.target_lambda_arn == "" || can(regex("^arn:aws:lambda:[a-z0-9-]+:[0-9]{12}:function:[^\\s]+$", var.target_lambda_arn))
+    error_message = "target_lambda_arn must be empty or a valid Lambda function ARN (arn:aws:lambda:<region>:<account-id>:function:<name>)."
   }
+}
+
+variable "target_lambda_name" {
+  type        = string
+  description = "Optional: Name of an existing Lambda function in the same account/region. If provided, the module will look up its ARN and use it as the target. Either `target_lambda_arn` or `target_lambda_name` must be provided."
+  default     = ""
 }
 
 variable "deploy_bucket_name" {

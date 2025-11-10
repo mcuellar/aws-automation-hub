@@ -25,6 +25,9 @@ module "serverless_api" {
   project_name         = "example-simple"
   environment          = "dev"
   cors_allowed_origins = ["https://app.example.com"]
+  # Provide the target Lambda's name (existing function in this account/region).
+  # The module will look up the function's ARN and use it for the deployer.
+  target_lambda_name = "example-target-lambda"
 }
 
 output "api_invoke_url" {
