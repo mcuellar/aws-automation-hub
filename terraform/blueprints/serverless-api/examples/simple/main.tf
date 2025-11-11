@@ -22,12 +22,12 @@ variable "aws_region" {
 module "serverless_api" {
   source = "../.."
 
-  project_name         = "example-simple"
+  project_name         = "tailorai"
   environment          = "dev"
-  cors_allowed_origins = ["https://app.example.com"]
+  cors_allowed_origins = ["https://mcuellar.github.io/tailorai"]
   # Provide the target Lambda's name (existing function in this account/region).
   # The module will look up the function's ARN and use it for the deployer.
-  target_lambda_name = "example-target-lambda"
+  target_lambda_name = "tailorai-lambda-lambda"
 }
 
 output "api_invoke_url" {
