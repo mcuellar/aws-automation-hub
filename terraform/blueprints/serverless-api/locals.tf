@@ -15,5 +15,14 @@ locals {
 
 # Resolved target lambda ARN: prefer explicit ARN, otherwise use the lookup by name (data.aws_lambda_function.target)
 locals {
-  target_lambda_arn = var.target_lambda_arn != "" ? var.target_lambda_arn : (length(data.aws_lambda_function.target) > 0 ? data.aws_lambda_function.target[0].arn : "")
+  target_lambda_arn = var.target_lambda_arn != "" ? var.target_lambda_arn : (
+    var.target_lambda_name != "" ? data.aws_lambda_function.target[0].arn : (
+      length(aws_lambda_function.target) > 0 ? aws_lambda_function.target[0].arn : ""
+    )
+  )
+}
+
+# Resolved API lambda ARN: prefer explicit API lambda override, otherwise use the target lambda ARN
+locals {
+  api_lambda_arn = var.api_lambda_arn != "" ? var.api_lambda_arn : local.target_lambda_arn
 }

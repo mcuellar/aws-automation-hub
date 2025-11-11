@@ -41,7 +41,7 @@ resource "aws_api_gateway_integration" "root_any" {
   http_method             = aws_api_gateway_method.root_any[0].http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = var.api_lambda_arn
+  uri                     = "arn:aws:apigateway:${data.aws_region.current.id}:lambda:path/2015-03-31/functions/${local.api_lambda_arn}/invocations"
 }
 
 resource "aws_api_gateway_method" "proxy_any" {
@@ -63,7 +63,7 @@ resource "aws_api_gateway_integration" "proxy_any" {
   http_method             = aws_api_gateway_method.proxy_any[0].http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = var.api_lambda_arn
+  uri                     = "arn:aws:apigateway:${data.aws_region.current.id}:lambda:path/2015-03-31/functions/${local.api_lambda_arn}/invocations"
 
   request_parameters = {
     "integration.request.path.proxy" = "method.request.path.proxy"
@@ -74,7 +74,7 @@ resource "aws_lambda_permission" "api_gateway" {
   count         = var.create_api_gateway ? 1 : 0
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
-  function_name = var.api_lambda_arn
+  function_name = local.api_lambda_arn
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.this[0].execution_arn}/*/*"
 }
@@ -89,7 +89,7 @@ resource "aws_api_gateway_deployment" "this" {
         aws_api_gateway_integration.root_any[0].id,
         aws_api_gateway_integration.proxy_any[0].id
       ],
-      api_lambda = var.api_lambda_arn
+      api_lambda = local.api_lambda_arn
     }))
   }
 
