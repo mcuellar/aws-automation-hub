@@ -19,17 +19,23 @@ variable "aws_region" {
   default     = "us-east-1"
 }
 
+
+# To use REST API, set api_gateway_type = "REST"
 module "serverless_api" {
   source = "../.."
-
   project_name         = "tailorai"
   environment          = "dev"
+  create_api_gateway   = true
   cors_allowed_origins = ["https://mcuellar.github.io/tailorai"]
-  # Provide the target Lambda's name (existing function in this account/region).
-  # The module will look up the function's ARN and use it for the deployer.
-  target_lambda_name = "tailorai-lambda-lambda"
+  # api_gateway_type   = "HTTP" # default, or "REST"
+  # No target_lambda_name or target_lambda_arn provided: the module will create a hello-world target lambda automatically.
 }
+
 
 output "api_invoke_url" {
   value = module.serverless_api.api_invoke_url
+}
+
+output "artifact_bucket_name" {
+  value = module.serverless_api.artifact_bucket_name
 }

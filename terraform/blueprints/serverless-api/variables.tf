@@ -1,3 +1,12 @@
+variable "api_gateway_type" {
+  type        = string
+  description = "Type of API Gateway to create: \"HTTP\" (default, API Gateway v2) or \"REST\" (API Gateway v1)."
+  default     = "HTTP"
+  validation {
+    condition     = contains(["HTTP", "REST"], upper(var.api_gateway_type))
+    error_message = "api_gateway_type must be either 'HTTP' or 'REST'."
+  }
+}
 variable "project_name" {
   type        = string
   description = "Name of the project this serverless API belongs to."
@@ -17,7 +26,7 @@ variable "aws_region" {
 
 variable "stage_name" {
   type        = string
-  description = "API Gateway stage name."
+  description = "HTTP API stage name."
   default     = "dev"
 }
 

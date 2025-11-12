@@ -1,3 +1,9 @@
+resource "null_resource" "fail_if_no_target" {
+  count = var.target_lambda_arn == "" && var.target_lambda_name == "" && length(aws_lambda_function.target) == 0 ? 1 : 0
+  provisioner "local-exec" {
+    command = "echo 'ERROR: You must provide target_lambda_arn, target_lambda_name, or allow the module to create the default target lambda.' && exit 1"
+  }
+}
 data "archive_file" "deployer" {
   type        = "zip"
   source_file = "${path.module}/lambda_deployer/handler.py"

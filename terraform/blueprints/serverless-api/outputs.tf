@@ -12,6 +12,11 @@ output "artifact_bucket_name" {
 }
 
 output "api_invoke_url" {
-  description = "Invoke URL for the optional API Gateway stage."
-  value       = var.create_api_gateway ? "https://${aws_api_gateway_rest_api.this[0].id}.execute-api.${data.aws_region.current.id}.amazonaws.com/${aws_api_gateway_stage.this[0].stage_name}" : null
+  description = "Invoke URL for the optional API Gateway stage (HTTP or REST)."
+  value = var.create_api_gateway ? (
+    upper(var.api_gateway_type) == "HTTP" ? aws_apigatewayv2_stage.default[0].invoke_url :
+    upper(var.api_gateway_type) == "REST" ? (
+      "https://${aws_api_gateway_rest_api.this[0].id}.execute-api.${data.aws_region.current.id}.amazonaws.com/${aws_api_gateway_stage.this[0].stage_name}"
+    ) : null
+  ) : null
 }

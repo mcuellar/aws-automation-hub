@@ -1,13 +1,17 @@
+
 # Serverless API Blueprint
 
-This blueprint provisions an AWS API Gateway REST API backed by a Lambda function with optional AWS WAF protection. It enforces configurable CORS restrictions, integrates with AWS Secrets Manager, and configures CloudWatch logging for both the API and the function.
+
+This blueprint provisions an AWS API Gateway (HTTP API or REST API, selectable) backed by a Lambda function with optional AWS WAF protection. It enforces configurable CORS restrictions, integrates with AWS Secrets Manager, and configures CloudWatch logging for both the API and the function.
+
+
 
 ## Features
 
-- Regional API Gateway REST API with proxy routing to a hello-world Lambda function.
+- Regional AWS API Gateway (HTTP API v2 or REST API v1) with proxy routing to a hello-world Lambda function.
 - Lambda execution role with least-privilege permissions and optional read access to AWS Secrets Manager secrets supplied by consumers.
-- Configurable CORS enforcement handled within the Lambda handler.
-- CloudWatch execution and access logging with IAM roles managed by Terraform.
+- Configurable CORS enforcement handled within the Lambda handler and API Gateway configuration (HTTP API supports native CORS, REST API requires Lambda logic).
+- CloudWatch execution logging for Lambda and API Gateway.
 - Optional AWS WAFv2 Web ACL using AWS managed rule groups (disabled by default).
 
 ## Requirements
@@ -18,17 +22,33 @@ This blueprint provisions an AWS API Gateway REST API backed by a Lambda functio
 | aws | >= 5.0.0 |
 | archive | >= 2.3.0 |
 
+
 ## Usage
 
+
 ```hcl
+# HTTP API (default)
 module "serverless_api" {
   source = "../"
-
   project_name          = "my-service"
   environment           = "dev"
   cors_allowed_origins  = ["https://app.example.com"]
   secret_arns           = ["arn:aws:secretsmanager:us-east-1:123456789012:secret:my-secret"]
   enable_waf            = false
+  create_api_gateway    = true
+  # api_gateway_type    = "HTTP" # (default)
+}
+
+# REST API
+module "serverless_api" {
+  source = "../"
+  project_name          = "my-service"
+  environment           = "dev"
+  cors_allowed_origins  = ["https://app.example.com"]
+  secret_arns           = ["arn:aws:secretsmanager:us-east-1:123456789012:secret:my-secret"]
+  enable_waf            = false
+  create_api_gateway    = true
+  api_gateway_type      = "REST"
 }
 ```
 
@@ -42,6 +62,7 @@ Refer to the [examples](examples/README.md) directory for both minimal and fully
 | `environment` | Deployment environment name used for tagging and resource naming. | `string` | `"dev"` | no |
 | `aws_region` | AWS region to deploy resources in. Leave null to use the provider default or environment configuration. | `string` | `null` | no |
 | `stage_name` | API Gateway stage name. | `string` | `"dev"` | no |
+| `api_gateway_type` | Type of API Gateway to create: `"HTTP"` (default, API Gateway v2) or `"REST"` (API Gateway v1). | `string` | `"HTTP"` | no |
 | `lambda_runtime` | Lambda runtime to use for the hello world handler. | `string` | `"python3.10"` | no |
 | `lambda_memory_size` | Memory size for the Lambda function in MB. | `number` | `128` | no |
 | `lambda_timeout` | Timeout for the Lambda function in seconds. | `number` | `10` | no |
@@ -59,6 +80,7 @@ Refer to the [examples](examples/README.md) directory for both minimal and fully
 | `target_lambda_arn` | Optional: Full ARN of the Lambda function that the deployer should update when new artifacts arrive in the S3 bucket. If provided, the module will scope the deployer IAM policy to this exact function. | `string` | `""` | no |
 | `target_lambda_name` | Optional: Name of an existing Lambda function in the same account/region. If provided, the module will look up its ARN and use it as the target. Either `target_lambda_arn` or `target_lambda_name` must be provided when using the deployer. | `string` | `""` | no |
 
+
 ## Outputs
 
 | Name | Description |
@@ -67,6 +89,7 @@ Refer to the [examples](examples/README.md) directory for both minimal and fully
 | `waf_web_acl_arn` | ARN of the provisioned AWS WAFv2 Web ACL, if enabled. |
 
 ## Deployer / artifact workflow
+
 
 This module creates an S3 bucket for Lambda artifacts (with versioning suspended and a lifecycle rule to expire objects older than 3 days). It also creates a `deployer` Lambda that listens for S3 Object Created events via EventBridge and calls `UpdateFunctionCode` on the `target_lambda_arn` you provide.
 
@@ -89,6 +112,7 @@ module "serverless_api" {
 }
 ```
 
+
 2. Upload a zip artifact to the created artifacts bucket (see `artifact_bucket_name` output):
 
 ```bash
@@ -97,8 +121,12 @@ aws s3 cp my_function_build.zip s3://$(terraform output -raw artifact_bucket_nam
 
 3. The deployer Lambda will be invoked via EventBridge. It reads the S3 object key and calls `UpdateFunctionCode` with `Publish=True` to deploy the uploaded package to the target Lambda.
 
+
+
 Notes & security
 
+- The module provisions either an HTTP API (API Gateway v2, default) or a REST API (API Gateway v1) depending on the `api_gateway_type` variable. All integrations, permissions, and outputs are updated for the selected API type.
+- HTTP API is recommended for most new use cases due to lower cost and latency, but does not support all REST API features (API keys, usage plans, request validation, advanced throttling, etc.).
 - The module accepts either `target_lambda_arn` (full ARN) or `target_lambda_name` (function name). If you provide a name, the module will perform an internal lookup of the function's ARN and scope permissions to it. Providing a full ARN is still recommended when available to avoid reliance on lookups.
 - If your target Lambda resides in a different AWS account, prefer an assume-role pattern where the deployer assumes a role in the target account with `lambda:UpdateFunctionCode` permission. I can add that pattern if you need cross-account support.
 - If you use KMS encryption for the S3 bucket, ensure the deployer has `kms:Decrypt` for the CMK.
@@ -112,5 +140,7 @@ terraform init
 terraform fmt -check
 terraform validate
 ```
+
+
 
 The Lambda handler enforces the CORS origin list and attempts to read any configured Secrets Manager ARNs on every invocation, returning only metadata about access successes or failures.

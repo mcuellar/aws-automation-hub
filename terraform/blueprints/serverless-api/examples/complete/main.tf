@@ -104,6 +104,8 @@ module "serverless_api" {
   # Point the deployer at the example target Lambda created above.
   target_lambda_arn = aws_lambda_function.target.arn
 
+  # api_gateway_type = "HTTP" # default, or "REST"
+
   tags = {
     Application = "serverless-api"
     Owner       = "platform-team"
@@ -113,6 +115,10 @@ module "serverless_api" {
 output "api_invoke_url" {
   description = "Invoke URL for the deployed API."
   value       = module.serverless_api.api_invoke_url
+}
+
+output "artifact_bucket_name" {
+  value = module.serverless_api.artifact_bucket_name
 }
 
 output "waf_web_acl_arn" {
