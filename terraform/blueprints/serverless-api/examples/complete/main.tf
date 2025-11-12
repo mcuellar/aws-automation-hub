@@ -76,13 +76,13 @@ resource "aws_lambda_function" "target" {
 module "serverless_api" {
   source = "../.."
 
-  project_name = "example-complete"
+  project_name = "tailorai"
   environment  = "staging"
   stage_name   = "staging"
 
   cors_allowed_origins = [
     "https://staging.example.com",
-    "https://admin.example.com",
+    "https://mcuellar.github.io/tailorai",
   ]
   cors_allowed_methods = ["GET", "OPTIONS", "POST"]
   cors_allowed_headers = ["Content-Type", "Authorization", "X-Requested-With"]
@@ -102,7 +102,7 @@ module "serverless_api" {
   waf_override_action = "COUNT"
 
   # Point the deployer at the example target Lambda created above.
-  target_lambda_arn = aws_lambda_function.target.arn
+  # target_lambda_arn = aws_lambda_function.target.arn
 
   # api_gateway_type = "HTTP" # default, or "REST"
 
