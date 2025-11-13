@@ -10,6 +10,7 @@ locals {
   tags = merge(local.default_tags, var.tags)
 
   lambda_log_group_name = "/aws/lambda/${local.name_prefix}-handler"
+  deployer_log_group_name = "/aws/lambda/${local.name_prefix}-deployer"
   api_log_group_name    = "/aws/apigateway/${local.name_prefix}-${var.stage_name}"
 }
 

@@ -107,8 +107,8 @@ module "serverless_api" {
   # api_gateway_type = "HTTP" # default, or "REST"
 
   tags = {
-    Application = "serverless-api"
-    Owner       = "platform-team"
+    Application = "tailorai-api"
+    Owner       = "tailorai-team"
   }
 }
 

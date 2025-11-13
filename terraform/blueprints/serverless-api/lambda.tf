@@ -18,9 +18,13 @@ data "archive_file" "target" {
 }
 
 resource "aws_cloudwatch_log_group" "deployer" {
-  name              = local.lambda_log_group_name
+  name              = local.deployer_log_group_name
   retention_in_days = var.log_retention_in_days
   tags              = local.tags
+  lifecycle {
+    create_before_destroy = true
+    prevent_destroy = false
+  }
 }
 
 # CloudWatch log group for the target (hello) Lambda
@@ -29,6 +33,10 @@ resource "aws_cloudwatch_log_group" "target" {
   name              = local.lambda_log_group_name
   retention_in_days = var.log_retention_in_days
   tags              = local.tags
+  lifecycle {
+    create_before_destroy = true
+    prevent_destroy = false
+  }
 }
 
 resource "aws_lambda_function" "deployer" {

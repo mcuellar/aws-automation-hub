@@ -26,9 +26,13 @@ module "serverless_api" {
   project_name         = "tailorai"
   environment          = "dev"
   create_api_gateway   = true
-  cors_allowed_origins = ["https://mcuellar.github.io/tailorai"]
+  cors_allowed_origins = ["*"]
   # api_gateway_type   = "HTTP" # default, or "REST"
   # No target_lambda_name or target_lambda_arn provided: the module will create a hello-world target lambda automatically.
+  # tags = {
+  #   Application = "tailorai-api"
+  #   Owner       = "tailorai-team"
+  # }
 }
 
 
