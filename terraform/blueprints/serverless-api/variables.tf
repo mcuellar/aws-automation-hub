@@ -1,3 +1,8 @@
+variable "prefix_name" {
+  type        = string
+  description = "Prefix for resource names. Used for local.name_prefix."
+  default     = "tailorai"
+}
 variable "api_gateway_type" {
   type        = string
   description = "Type of API Gateway to create: \"HTTP\" (default, API Gateway v2) or \"REST\" (API Gateway v1)."

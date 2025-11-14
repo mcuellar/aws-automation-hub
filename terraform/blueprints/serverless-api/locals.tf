@@ -1,5 +1,5 @@
 locals {
-  name_prefix = lower(replace(join("-", compact([var.project_name, var.environment])), " ", "-"))
+  name_prefix = var.prefix_name
 
   default_tags = {
     Project     = var.project_name

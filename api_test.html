@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>CORS Test</title>
+</head>
+<body>
+  <button id="test">Test API</button>
+  <pre id="output"></pre>
+  <script>
+    document.getElementById('test').onclick = async function() {
+      const output = document.getElementById('output');
+      output.textContent = 'Loading...';
+      try {
+        const res = await fetch('https://m76zdwzpbk.execute-api.us-east-1.amazonaws.com/v1');
+        const text = await res.text();
+        output.textContent = 'Status: ' + res.status + '\\n' + text;
+      } catch (e) {
+        output.textContent = 'Error: ' + e;
+      }
+    };
+  </script>
+</body>
+</html>
