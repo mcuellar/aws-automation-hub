@@ -84,6 +84,18 @@ resource "aws_lambda_function" "target" {
     }, var.lambda_environment)
   }
 
+  # Ignore changes to the Lambda function's source code and hash, as well as
+  # environment, to avoid unnecessary updates outside of deployer actions.
+  lifecycle {
+    ignore_changes = [
+      filename,
+      source_code_hash,
+      # optional: ignore changes AWS makes internally
+      last_modified,
+      environment,
+    ]
+  }
+
   source_code_hash = data.archive_file.target.output_base64sha256
 
   # Depend on the target log group if present. Using the bare resource address here

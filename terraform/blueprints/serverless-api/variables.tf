@@ -145,3 +145,9 @@ variable "api_lambda_arn" {
   description = "ARN of the Lambda function the optional API Gateway should invoke. Required if create_api_gateway = true."
   default     = ""
 }
+
+variable "create_eventbridge_rule" {
+  description = "Whether to create the EventBridge rule for S3 object created events."
+  type        = bool
+  default     = false
+}

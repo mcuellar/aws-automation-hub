@@ -38,3 +38,4 @@ terraform.rc
 
 # Ignore zip files created for lambda functions
 *.zip
+.DS_Store
