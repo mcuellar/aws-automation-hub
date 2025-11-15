@@ -52,6 +52,7 @@ resource "aws_lambda_function" "deployer" {
   environment {
     variables = merge({
       TARGET_LAMBDA_ARN = local.target_lambda_arn
+      S3_BUCKET_NAME    = aws_s3_bucket.lambda_artifacts.bucket
     }, var.lambda_environment)
   }
 
@@ -91,7 +92,7 @@ resource "aws_lambda_function" "target" {
       filename,
       source_code_hash,
       # optional: ignore changes AWS makes internally
-      last_modified,
+      # last_modified,
       environment,
     ]
   }

@@ -1,39 +1,34 @@
 import boto3
 import os
+import logging
+import json
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, force=True)
+logger = logging.getLogger()
 
 lambda_client = boto3.client("lambda")
 
 def handler(event, context):
-    print(event)
-    # EventBridge for S3 object created events places object info in event['detail']
-    # The event may contain records differently depending on S3 -> EventBridge structure.
-    # We attempt to extract the key(s) defensively.
-    detail = event.get("detail", {})
+    logger.info(f"Received event:\n{json.dumps(event, indent=2)}")
 
-    # detail may contain object key at detail.object.key (string) or list depending on source
-    # Normalize to list of keys
-    keys = []
-    obj = detail.get("object") or {}
-    key_val = obj.get("key")
-    if isinstance(key_val, str):
-        keys = [key_val]
-    elif isinstance(key_val, list):
-        keys = key_val
+    lambda_arn = os.environ.get("TARGET_LAMBDA_ARN")
+    s3_bucket = os.environ.get("S3_BUCKET_NAME")
 
-    bucket = detail.get("bucket", {}).get("name")
-
-    if not bucket or not keys:
-        print("No bucket or keys found in event detail; nothing to do.")
-        return
-
-    for key in keys:
-        try:
-            response = lambda_client.update_function_code(
-                FunctionName=os.environ.get("TARGET_LAMBDA_ARN"),
-                S3Bucket=bucket,
-                S3Key=key,
-                Publish=True
-            )
-            print(f"Updated {os.environ.get('TARGET_LAMBDA_ARN')} with {key}")
-        except Exception as e:
-            print(f"Failed to update function code for {key}: {e}")
+    try:
+        response = lambda_client.update_function_code(
+            FunctionName=lambda_arn,
+            S3Bucket=s3_bucket,
+            S3Key="package.zip",
+            Publish=True
+        )
+        status = response.get("ResponseMetadata", {}).get("HTTPStatusCode")
+        if status == 200:
+            logger.info(f"Lambda function code updated successfully with status: {status}")
+        else:
+            logger.warning(f"Lambda function code update returned unexpected status: {status}")
+            
+            pretty_response = json.dumps(response, indent=2)
+            logger.error(f"Failed to update function code with package.zip: {pretty_response}")
+    except Exception as e:
+        logger.error(f"Failed to update function code with package.zip: {e}")
